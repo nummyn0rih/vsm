@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ShipmentStatus {
+  PLANNED
+  IN_TRANSIT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  fullName  String   @map("full_name")
+  role      Role     @default(USER)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shipments Shipment[]
+  logs      AuditLog[]
+
+  @@map("users")
+}
+
+model Vegetable {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  shipments Shipment[]
+
+  @@map("vegetables")
+}
+
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  contactInfo String?  @map("contact_info")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  shipments Shipment[]
+
+  @@map("suppliers")
+}
+
+model TransportCompany {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  contactInfo String?  @map("contact_info")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  shipments Shipment[]
+
+  @@map("transport_companies")
+}
+
+model Driver {
+  id        Int      @id @default(autoincrement())
+  fullName  String   @map("full_name")
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  shipments Shipment[]
+
+  @@map("drivers")
+}
+
+model Shipment {
+  id                 Int             @id @default(autoincrement())
+  vegetableId        Int             @map("vegetable_id")
+  supplierId         Int             @map("supplier_id")
+  transportCompanyId Int             @map("transport_company_id")
+  driverId           Int             @map("driver_id")
+  status             ShipmentStatus  @default(PLANNED)
+  quantity           Float
+  unit               String          @default("кг")
+  weight             Float?
+  departureDate      DateTime?       @map("departure_date")
+  arrivalDate        DateTime?       @map("arrival_date")
+  notes              String?
+  createdById        Int             @map("created_by_id")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  vegetable        Vegetable        @relation(fields: [vegetableId], references: [id])
+  supplier         Supplier         @relation(fields: [supplierId], references: [id])
+  transportCompany TransportCompany @relation(fields: [transportCompanyId], references: [id])
+  driver           Driver           @relation(fields: [driverId], references: [id])
+  createdBy        User             @relation(fields: [createdById], references: [id])
+
+  logs AuditLog[]
+
+  @@map("shipments")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  entityType String   @map("entity_type")
+  entityId   Int      @map("entity_id")
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  userId     Int      @map("user_id")
+  shipmentId Int?     @map("shipment_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  shipment Shipment? @relation(fields: [shipmentId], references: [id])
+
+  @@map("audit_logs")
+}
