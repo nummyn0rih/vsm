@@ -31,7 +31,16 @@ async function main() {
   });
 
   // Овощи
-  const vegetables = ['Картофель', 'Морковь', 'Свёкла', 'Капуста', 'Лук', 'Томаты', 'Огурцы', 'Перец'];
+  const vegetables = [
+    'Картофель',
+    'Морковь',
+    'Свёкла',
+    'Капуста',
+    'Лук',
+    'Томаты',
+    'Огурцы',
+    'Перец',
+  ];
   for (const name of vegetables) {
     await prisma.vegetable.upsert({
       where: { name },

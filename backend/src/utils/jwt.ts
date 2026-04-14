@@ -1,21 +1,20 @@
 import jwt from 'jsonwebtoken';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 export interface JwtPayload {
   userId: number;
+  email?: string;
   username: string;
   role: string;
 }
 
-export function generateToken(payload: JwtPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-}
+export const generateToken = (payload: JwtPayload): string => {
+  return jwt.sign(payload, JWT_SECRET, {
+    expiresIn: '24h',
+  });
+};
 
-export function verifyToken(token: string): JwtPayload {
+export const verifyToken = (token: string): JwtPayload => {
   return jwt.verify(token, JWT_SECRET) as JwtPayload;
-}
+};
