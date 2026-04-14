@@ -1,0 +1,9 @@
+# Общее для всего проекта
+node_modules/
+.env
+.env.*
+.DS_Store
+Thumbs.db
+*.log
+dist/
+build/

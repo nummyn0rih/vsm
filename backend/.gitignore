@@ -1,0 +1,59 @@
+# Зависимости
+node_modules/
+
+# Сборка
+dist/
+build/
+
+# Переменные окружения
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Логи
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Prisma
+prisma/migrations/dev/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Кэш
+.cache/
+.npm/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Uploads / файлы пользователей
+uploads/
+public/uploads/
+
+# Тесты
+coverage/
+.nyc_output/
