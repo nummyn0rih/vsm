@@ -1,10 +1,29 @@
 import { Request, Response } from 'express';
-import { PrismaClient, ShipmentStatus } from '@prisma/client';
+import { body, validationResult } from 'express-validator';
+import { ShipmentStatus } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { createAuditLog } from '../services/logService';
 
-const prisma = new PrismaClient();
+export const shipmentValidation = [
+  body('vegetableId').isInt({ min: 1 }).withMessage('Укажите овощ'),
+  body('supplierId').isInt({ min: 1 }).withMessage('Укажите поставщика'),
+  body('transportCompanyId').isInt({ min: 1 }).withMessage('Укажите транспортную компанию'),
+  body('driverId').isInt({ min: 1 }).withMessage('Укажите водителя'),
+  body('quantity').isFloat({ min: 0 }).withMessage('Количество должно быть положительным числом'),
+  body('unit').optional().isString(),
+  body('weight').optional({ nullable: true }).isFloat({ min: 0 }),
+  body('departureDate').optional({ nullable: true }).isISO8601(),
+  body('arrivalDate').optional({ nullable: true }).isISO8601(),
+];
 
-// Получить все поставки с фильтрами
+const SHIPMENT_INCLUDE = {
+  vegetable: true,
+  supplier: true,
+  transportCompany: true,
+  driver: true,
+  createdBy: { select: { id: true, fullName: true, username: true } },
+} as const;
+
 export async function getShipments(req: Request, res: Response): Promise<void> {
   try {
     const {
@@ -20,23 +39,13 @@ export async function getShipments(req: Request, res: Response): Promise<void> {
       pageSize = '20',
     } = req.query;
 
-    const where: any = {};
+    const where: any = { deletedAt: null };
 
-    if (status) {
-      where.status = status as ShipmentStatus;
-    }
-    if (vegetableId) {
-      where.vegetableId = parseInt(vegetableId as string);
-    }
-    if (supplierId) {
-      where.supplierId = parseInt(supplierId as string);
-    }
-    if (transportCompanyId) {
-      where.transportCompanyId = parseInt(transportCompanyId as string);
-    }
-    if (driverId) {
-      where.driverId = parseInt(driverId as string);
-    }
+    if (status) where.status = status as ShipmentStatus;
+    if (vegetableId) where.vegetableId = parseInt(vegetableId as string);
+    if (supplierId) where.supplierId = parseInt(supplierId as string);
+    if (transportCompanyId) where.transportCompanyId = parseInt(transportCompanyId as string);
+    if (driverId) where.driverId = parseInt(driverId as string);
     if (dateFrom || dateTo) {
       where.departureDate = {};
       if (dateFrom) where.departureDate.gte = new Date(dateFrom as string);
@@ -57,13 +66,7 @@ export async function getShipments(req: Request, res: Response): Promise<void> {
     const [shipments, total] = await Promise.all([
       prisma.shipment.findMany({
         where,
-        include: {
-          vegetable: true,
-          supplier: true,
-          transportCompany: true,
-          driver: true,
-          createdBy: { select: { id: true, fullName: true, username: true } },
-        },
+        include: SHIPMENT_INCLUDE,
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -84,22 +87,15 @@ export async function getShipments(req: Request, res: Response): Promise<void> {
   }
 }
 
-// Получить одну поставку
 export async function getShipment(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
     const shipment = await prisma.shipment.findUnique({
       where: { id: parseInt(id) },
-      include: {
-        vegetable: true,
-        supplier: true,
-        transportCompany: true,
-        driver: true,
-        createdBy: { select: { id: true, fullName: true, username: true } },
-      },
+      include: SHIPMENT_INCLUDE,
     });
 
-    if (!shipment) {
+    if (!shipment || shipment.deletedAt) {
       res.status(404).json({ error: 'Поставка не найдена' });
       return;
     }
@@ -111,8 +107,13 @@ export async function getShipment(req: Request, res: Response): Promise<void> {
   }
 }
 
-// Создать поставку
 export async function createShipment(req: Request, res: Response): Promise<void> {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
+
   try {
     const {
       vegetableId,
@@ -143,13 +144,7 @@ export async function createShipment(req: Request, res: Response): Promise<void>
         notes,
         createdById: req.user!.userId,
       },
-      include: {
-        vegetable: true,
-        supplier: true,
-        transportCompany: true,
-        driver: true,
-        createdBy: { select: { id: true, fullName: true, username: true } },
-      },
+      include: SHIPMENT_INCLUDE,
     });
 
     await createAuditLog({
@@ -168,15 +163,20 @@ export async function createShipment(req: Request, res: Response): Promise<void>
   }
 }
 
-// Обновить поставку
 export async function updateShipment(req: Request, res: Response): Promise<void> {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    res.status(400).json({ errors: errors.array() });
+    return;
+  }
+
   try {
     const { id } = req.params;
     const shipmentId = parseInt(id);
 
     const oldShipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
 
-    if (!oldShipment) {
+    if (!oldShipment || oldShipment.deletedAt) {
       res.status(404).json({ error: 'Поставка не найдена' });
       return;
     }
@@ -210,13 +210,7 @@ export async function updateShipment(req: Request, res: Response): Promise<void>
         arrivalDate: arrivalDate ? new Date(arrivalDate) : undefined,
         notes,
       },
-      include: {
-        vegetable: true,
-        supplier: true,
-        transportCompany: true,
-        driver: true,
-        createdBy: { select: { id: true, fullName: true, username: true } },
-      },
+      include: SHIPMENT_INCLUDE,
     });
 
     await createAuditLog({
@@ -236,7 +230,6 @@ export async function updateShipment(req: Request, res: Response): Promise<void>
   }
 }
 
-// Обновить статус
 export async function updateShipmentStatus(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
@@ -245,7 +238,7 @@ export async function updateShipmentStatus(req: Request, res: Response): Promise
 
     const oldShipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
 
-    if (!oldShipment) {
+    if (!oldShipment || oldShipment.deletedAt) {
       res.status(404).json({ error: 'Поставка не найдена' });
       return;
     }
@@ -278,7 +271,6 @@ export async function updateShipmentStatus(req: Request, res: Response): Promise
   }
 }
 
-// Удалить поставку
 export async function deleteShipment(req: Request, res: Response): Promise<void> {
   try {
     const { id } = req.params;
@@ -286,15 +278,15 @@ export async function deleteShipment(req: Request, res: Response): Promise<void>
 
     const shipment = await prisma.shipment.findUnique({ where: { id: shipmentId } });
 
-    if (!shipment) {
+    if (!shipment || shipment.deletedAt) {
       res.status(404).json({ error: 'Поставка не найдена' });
       return;
     }
 
-    // Сначала удаляем связанные логи
-    await prisma.auditLog.deleteMany({ where: { shipmentId } });
-
-    await prisma.shipment.delete({ where: { id: shipmentId } });
+    await prisma.shipment.update({
+      where: { id: shipmentId },
+      data: { deletedAt: new Date() },
+    });
 
     await createAuditLog({
       action: 'DELETE',
@@ -302,6 +294,7 @@ export async function deleteShipment(req: Request, res: Response): Promise<void>
       entityId: shipmentId,
       oldValues: shipment,
       userId: req.user!.userId,
+      shipmentId: shipmentId,
     });
 
     res.json({ message: 'Поставка удалена' });

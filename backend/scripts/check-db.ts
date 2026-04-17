@@ -1,14 +1,10 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../src/lib/prisma';
 
 async function main() {
   try {
-    // Проверить подключение
     await prisma.$connect();
     console.log('✅ Подключение к БД успешно!');
 
-    // Проверить таблицы
     const users = await prisma.user.count();
     const vegetables = await prisma.vegetable.count();
     const suppliers = await prisma.supplier.count();

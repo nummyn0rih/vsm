@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { createAuditLog } from '../services/logService';
-
-const prisma = new PrismaClient();
 
 // === ОВОЩИ ===
 export async function getVegetables(req: Request, res: Response): Promise<void> {
@@ -61,19 +59,16 @@ export async function updateVegetable(req: Request, res: Response): Promise<void
 }
 
 export async function deleteVegetable(req: Request, res: Response): Promise<void> {
-    try {
+  try {
     const { id } = req.params;
     const entityId = parseInt(id);
 
-    // Проверяем, используется ли овощ в поставках
     const usedInShipments = await prisma.shipment.count({
-      where: { vegetableId: entityId },
+      where: { vegetableId: entityId, deletedAt: null },
     });
 
     if (usedInShipments > 0) {
-      res.status(400).json({
-        error: 'Невозможно удалить: овощ используется в поставках',
-      });
+      res.status(400).json({ error: 'Невозможно удалить: овощ используется в поставках' });
       return;
     }
 
@@ -105,9 +100,7 @@ export async function getSuppliers(req: Request, res: Response): Promise<void> {
 export async function createSupplier(req: Request, res: Response): Promise<void> {
   try {
     const { name, contactInfo } = req.body;
-    const supplier = await prisma.supplier.create({
-      data: { name, contactInfo },
-    });
+    const supplier = await prisma.supplier.create({ data: { name, contactInfo } });
 
     await createAuditLog({
       action: 'CREATE',
@@ -156,13 +149,11 @@ export async function deleteSupplier(req: Request, res: Response): Promise<void>
     const entityId = parseInt(id);
 
     const usedInShipments = await prisma.shipment.count({
-      where: { supplierId: entityId },
+      where: { supplierId: entityId, deletedAt: null },
     });
 
     if (usedInShipments > 0) {
-      res.status(400).json({
-        error: 'Невозможно удалить: поставщик используется в поставках',
-      });
+      res.status(400).json({ error: 'Невозможно удалить: поставщик используется в поставках' });
       return;
     }
 
@@ -184,9 +175,7 @@ export async function deleteSupplier(req: Request, res: Response): Promise<void>
 // === ТРАНСПОРТНЫЕ КОМПАНИИ ===
 export async function getTransportCompanies(req: Request, res: Response): Promise<void> {
   try {
-    const companies = await prisma.transportCompany.findMany({
-      orderBy: { name: 'asc' },
-    });
+    const companies = await prisma.transportCompany.findMany({ orderBy: { name: 'asc' } });
     res.json(companies);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при получении списка транспортных компаний' });
@@ -196,9 +185,7 @@ export async function getTransportCompanies(req: Request, res: Response): Promis
 export async function createTransportCompany(req: Request, res: Response): Promise<void> {
   try {
     const { name, contactInfo } = req.body;
-    const company = await prisma.transportCompany.create({
-      data: { name, contactInfo },
-    });
+    const company = await prisma.transportCompany.create({ data: { name, contactInfo } });
 
     await createAuditLog({
       action: 'CREATE',
@@ -247,13 +234,11 @@ export async function deleteTransportCompany(req: Request, res: Response): Promi
     const entityId = parseInt(id);
 
     const usedInShipments = await prisma.shipment.count({
-      where: { transportCompanyId: entityId },
+      where: { transportCompanyId: entityId, deletedAt: null },
     });
 
     if (usedInShipments > 0) {
-      res.status(400).json({
-        error: 'Невозможно удалить: транспортная компания используется в поставках',
-      });
+      res.status(400).json({ error: 'Невозможно удалить: транспортная компания используется в поставках' });
       return;
     }
 
@@ -275,9 +260,7 @@ export async function deleteTransportCompany(req: Request, res: Response): Promi
 // === ВОДИТЕЛИ ===
 export async function getDrivers(req: Request, res: Response): Promise<void> {
   try {
-    const drivers = await prisma.driver.findMany({
-      orderBy: { fullName: 'asc' },
-    });
+    const drivers = await prisma.driver.findMany({ orderBy: { fullName: 'asc' } });
     res.json(drivers);
   } catch (error) {
     res.status(500).json({ error: 'Ошибка при получении списка водителей' });
@@ -287,9 +270,7 @@ export async function getDrivers(req: Request, res: Response): Promise<void> {
 export async function createDriver(req: Request, res: Response): Promise<void> {
   try {
     const { fullName, phone } = req.body;
-    const driver = await prisma.driver.create({
-      data: { fullName, phone },
-    });
+    const driver = await prisma.driver.create({ data: { fullName, phone } });
 
     await createAuditLog({
       action: 'CREATE',
@@ -334,13 +315,11 @@ export async function deleteDriver(req: Request, res: Response): Promise<void> {
     const entityId = parseInt(id);
 
     const usedInShipments = await prisma.shipment.count({
-      where: { driverId: entityId },
+      where: { driverId: entityId, deletedAt: null },
     });
 
     if (usedInShipments > 0) {
-      res.status(400).json({
-        error: 'Невозможно удалить: водитель используется в поставках',
-      });
+      res.status(400).json({ error: 'Невозможно удалить: водитель используется в поставках' });
       return;
     }
 

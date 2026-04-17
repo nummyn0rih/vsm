@@ -26,7 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(response.data);
         } catch {
           localStorage.removeItem('token');
-          localStorage.removeItem('user');
           setToken(null);
           setUser(null);
         }
@@ -40,14 +39,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await authApi.login(username, password);
     const { token: newToken, user: newUser } = response.data;
     localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
     setToken(null);
     setUser(null);
   };

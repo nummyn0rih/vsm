@@ -60,7 +60,6 @@ export default function ShipmentTable({
       dataIndex: ['vegetable', 'name'],
       key: 'vegetable',
       width: 120,
-      sorter: (a, b) => a.vegetable.name.localeCompare(b.vegetable.name),
     },
     {
       title: 'Поставщик',
@@ -113,8 +112,6 @@ export default function ShipmentTable({
       key: 'departureDate',
       width: 150,
       render: (val) => (val ? dayjs(val).format('DD.MM.YYYY HH:mm') : '—'),
-      sorter: (a, b) =>
-        new Date(a.departureDate || 0).getTime() - new Date(b.departureDate || 0).getTime(),
     },
     {
       title: 'Дата прибытия',

@@ -6,6 +6,7 @@ import {
   updateShipment,
   updateShipmentStatus,
   deleteShipment,
+  shipmentValidation,
 } from '../controllers/shipmentController';
 import { authMiddleware } from '../middleware/auth';
 import { requireAdmin } from '../middleware/roleCheck';
@@ -16,8 +17,8 @@ router.use(authMiddleware);
 
 router.get('/', getShipments);
 router.get('/:id', getShipment);
-router.post('/', requireAdmin, createShipment);
-router.put('/:id', requireAdmin, updateShipment);
+router.post('/', requireAdmin, shipmentValidation, createShipment);
+router.put('/:id', requireAdmin, shipmentValidation, updateShipment);
 router.patch('/:id/status', requireAdmin, updateShipmentStatus);
 router.delete('/:id', requireAdmin, deleteShipment);
 
