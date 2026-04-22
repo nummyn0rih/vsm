@@ -24,10 +24,10 @@ export default function ExportExcel({ data, fileName = 'поставки' }: Pro
       'Ед. изм.': item.unit,
       'Вес (кг)': item.weight || '',
       'Дата отправки': item.departureDate
-        ? dayjs(item.departureDate).format('DD.MM.YYYY HH:mm')
+        ? dayjs(item.departureDate).format('DD.MM.YYYY')
         : '',
       'Дата прибытия': item.arrivalDate
-        ? dayjs(item.arrivalDate).format('DD.MM.YYYY HH:mm')
+        ? dayjs(item.arrivalDate).format('DD.MM.YYYY')
         : '',
       'Примечания': item.notes || '',
       'Создал': item.createdBy.fullName,

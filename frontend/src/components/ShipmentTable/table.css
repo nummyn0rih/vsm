@@ -1,0 +1,43 @@
+.vsm-row-group > td {
+  background: #fafafa !important;
+  font-weight: 600;
+}
+
+.vsm-row-group:hover > td {
+  background: #f0f0f0 !important;
+}
+
+.vsm-row-subtotal > td {
+  background: #f0f7ff !important;
+  font-style: italic;
+  border-top: 1px dashed #91caff !important;
+  color: #003a8c;
+}
+
+.vsm-row-subtotal:hover > td {
+  background: #e6f4ff !important;
+}
+
+.vsm-subtotal-item {
+  display: inline-block;
+  margin-right: 16px;
+  white-space: nowrap;
+}
+
+.vsm-subtotal-item-weight {
+  font-weight: 600;
+  font-style: normal;
+}
+
+.vsm-table-toolbar {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: flex-end;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+@media print {
+  .vsm-table-toolbar {
+    display: none;
+  }
+}

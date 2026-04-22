@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Table, Space, Button, Popconfirm, message, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -7,6 +7,23 @@ import { Shipment, ShipmentStatus, PaginatedResponse, ShipmentFilters } from '..
 import { StatusTag, StatusSelect } from './StatusTag';
 import { shipmentsApi } from '../api/shipments';
 import { useAuth } from '../context/AuthContext';
+import ColumnSettings from './ShipmentTable/ColumnSettings';
+import { useColumnPrefs } from './ShipmentTable/useColumnPrefs';
+import {
+  ColumnKey,
+  COLUMN_LABELS,
+  GroupRow,
+  isGroupRow,
+  isSubtotalRow,
+  SubtotalRow,
+  TableRow,
+} from './ShipmentTable/types';
+import {
+  defaultExpandedKeys,
+  formatWeight,
+  groupByArrivalDate,
+} from './ShipmentTable/groupShipments';
+import './ShipmentTable/table.css';
 
 interface Props {
   data: PaginatedResponse<Shipment> | null;
@@ -17,15 +34,17 @@ interface Props {
   onRefresh: () => void;
 }
 
-export default function ShipmentTable({
-  data,
-  loading,
-  filters,
-  onFiltersChange,
-  onEdit,
-  onRefresh,
-}: Props) {
+export default function ShipmentTable({ data, loading, onEdit, onRefresh }: Props) {
   const { isAdmin } = useAuth();
+  const { prefs, visibleOrdered, toggleVisible, reorder, reset } = useColumnPrefs();
+
+  const shipments = data?.data || [];
+  const groups = useMemo(() => groupByArrivalDate(shipments), [shipments]);
+
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  useEffect(() => {
+    setExpandedKeys(defaultExpandedKeys(groups));
+  }, [groups]);
 
   const handleStatusChange = async (id: number, status: ShipmentStatus) => {
     try {
@@ -47,140 +66,197 @@ export default function ShipmentTable({
     }
   };
 
-  const columns: ColumnsType<Shipment> = [
-    {
-      title: '№',
-      key: 'index',
-      width: 60,
-      render: (_, __, index) =>
-        ((filters.page || 1) - 1) * (filters.pageSize || 20) + index + 1,
+  const columnRenderers = buildColumnRenderers({ isAdmin, onStatusChange: handleStatusChange });
+
+  const visibleCount = visibleOrdered.length;
+
+  const dataColumns: ColumnsType<TableRow> = visibleOrdered.map((key, idx) => {
+    const def = columnRenderers[key];
+    const isFirst = idx === 0;
+    return {
+      title: def.title,
+      key,
+      width: def.width,
+      ellipsis: def.ellipsis,
+      onCell: (record: TableRow) => {
+        if (isGroupRow(record) || isSubtotalRow(record)) {
+          return isFirst ? { colSpan: visibleCount } : { colSpan: 0 };
+        }
+        return {};
+      },
+      render: (_: unknown, record: TableRow) => {
+        if (isGroupRow(record)) {
+          return isFirst ? renderGroupLabel(record) : null;
+        }
+        if (isSubtotalRow(record)) {
+          return isFirst ? renderSubtotal(record) : null;
+        }
+        return def.render(record as Shipment);
+      },
+    };
+  });
+
+  const columns: ColumnsType<TableRow> = [...dataColumns];
+
+  if (isAdmin) {
+    columns.push({
+      title: 'Действия',
+      key: 'actions',
+      width: 100,
+      fixed: 'right',
+      render: (_, record) => {
+        if (isGroupRow(record) || isSubtotalRow(record)) return null;
+        const shipment = record as Shipment;
+        return (
+          <Space>
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => onEdit(shipment)}
+            />
+            <Popconfirm
+              title="Удалить поставку?"
+              description="Это действие нельзя отменить"
+              onConfirm={() => handleDelete(shipment.id)}
+              okText="Да"
+              cancelText="Нет"
+            >
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        );
+      },
+    });
+  }
+
+  return (
+    <>
+      <div className="vsm-table-toolbar">
+        <ColumnSettings
+          prefs={prefs}
+          onReorder={reorder}
+          onToggle={toggleVisible}
+          onReset={reset}
+        />
+      </div>
+      <Table<TableRow>
+        columns={columns}
+        dataSource={groups}
+        rowKey="id"
+        loading={loading}
+        scroll={{ x: 1600 }}
+        pagination={false}
+        expandable={{
+          expandedRowKeys: expandedKeys,
+          onExpandedRowsChange: (keys) => setExpandedKeys([...keys]),
+        }}
+        rowClassName={(record) => {
+          if (isGroupRow(record)) return 'vsm-row-group';
+          if (isSubtotalRow(record)) return 'vsm-row-subtotal';
+          return '';
+        }}
+        size="middle"
+      />
+    </>
+  );
+}
+
+interface ColumnRenderer {
+  title: string;
+  width?: number;
+  ellipsis?: { showTitle: boolean } | boolean;
+  render: (r: Shipment) => React.ReactNode;
+}
+
+function buildColumnRenderers(opts: {
+  isAdmin: boolean;
+  onStatusChange: (id: number, status: ShipmentStatus) => void;
+}): Record<ColumnKey, ColumnRenderer> {
+  return {
+    vegetable: {
+      title: COLUMN_LABELS.vegetable,
+      width: 140,
+      render: (r) => r.vegetable.name,
     },
-    {
-      title: 'Овощ',
-      dataIndex: ['vegetable', 'name'],
-      key: 'vegetable',
-      width: 120,
-    },
-    {
-      title: 'Поставщик',
-      dataIndex: ['supplier', 'name'],
-      key: 'supplier',
+    supplier: {
+      title: COLUMN_LABELS.supplier,
       width: 180,
+      render: (r) => r.supplier.name,
     },
-    {
-      title: 'Транспортная компания',
-      dataIndex: ['transportCompany', 'name'],
-      key: 'transportCompany',
+    transportCompany: {
+      title: COLUMN_LABELS.transportCompany,
       width: 180,
+      render: (r) => r.transportCompany.name,
     },
-    {
-      title: 'Водитель',
-      dataIndex: ['driver', 'fullName'],
-      key: 'driver',
+    driver: {
+      title: COLUMN_LABELS.driver,
       width: 180,
+      render: (r) => r.driver.fullName,
     },
-    {
-      title: 'Статус',
-      key: 'status',
+    status: {
+      title: COLUMN_LABELS.status,
       width: 170,
-      render: (_, record) =>
-        isAdmin ? (
+      render: (r) =>
+        opts.isAdmin ? (
           <StatusSelect
-            value={record.status}
-            onChange={(status) => handleStatusChange(record.id, status)}
+            value={r.status}
+            onChange={(status) => opts.onStatusChange(r.id, status)}
           />
         ) : (
-          <StatusTag status={record.status} />
+          <StatusTag status={r.status} />
         ),
     },
-    {
-      title: 'Кол-во',
-      key: 'quantity',
-      width: 100,
-      render: (_, record) => `${record.quantity} ${record.unit}`,
+    quantity: {
+      title: COLUMN_LABELS.quantity,
+      width: 110,
+      render: (r) => `${r.quantity} ${r.unit}`,
     },
-    {
-      title: 'Вес (кг)',
-      dataIndex: 'weight',
-      key: 'weight',
-      width: 90,
-      render: (val) => val || '—',
+    weight: {
+      title: COLUMN_LABELS.weight,
+      width: 110,
+      render: (r) => (typeof r.weight === 'number' ? formatWeight(r.weight) : '—'),
     },
-    {
-      title: 'Дата отправки',
-      dataIndex: 'departureDate',
-      key: 'departureDate',
-      width: 150,
-      render: (val) => (val ? dayjs(val).format('DD.MM.YYYY HH:mm') : '—'),
+    departureDate: {
+      title: COLUMN_LABELS.departureDate,
+      width: 130,
+      render: (r) => (r.departureDate ? dayjs(r.departureDate).format('DD.MM.YYYY') : '—'),
     },
-    {
-      title: 'Дата прибытия',
-      dataIndex: 'arrivalDate',
-      key: 'arrivalDate',
-      width: 150,
-      render: (val) => (val ? dayjs(val).format('DD.MM.YYYY HH:mm') : '—'),
+    arrivalDate: {
+      title: COLUMN_LABELS.arrivalDate,
+      width: 130,
+      render: (r) => (r.arrivalDate ? dayjs(r.arrivalDate).format('DD.MM.YYYY') : '—'),
     },
-    {
-      title: 'Примечания',
-      dataIndex: 'notes',
-      key: 'notes',
+    notes: {
+      title: COLUMN_LABELS.notes,
       width: 200,
       ellipsis: { showTitle: false },
-      render: (val) => (
-        <Tooltip placement="topLeft" title={val}>
-          {val || '—'}
+      render: (r) => (
+        <Tooltip placement="topLeft" title={r.notes}>
+          {r.notes || '—'}
         </Tooltip>
       ),
     },
-    ...(isAdmin
-      ? [
-          {
-            title: 'Действия',
-            key: 'actions',
-            width: 100,
-            fixed: 'right' as const,
-            render: (_: any, record: Shipment) => (
-              <Space>
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<EditOutlined />}
-                  onClick={() => onEdit(record)}
-                />
-                <Popconfirm
-                  title="Удалить поставку?"
-                  description="Это действие нельзя отменить"
-                  onConfirm={() => handleDelete(record.id)}
-                  okText="Да"
-                  cancelText="Нет"
-                >
-                  <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-                </Popconfirm>
-              </Space>
-            ),
-          },
-        ]
-      : []),
-  ];
+  };
+}
 
+function renderGroupLabel(group: GroupRow) {
+  return <span>{group.label}</span>;
+}
+
+function renderSubtotal(row: SubtotalRow) {
+  if (row.totalsByVegetable.length === 0) {
+    return <span>Подытог: —</span>;
+  }
   return (
-    <Table<Shipment>
-      columns={columns}
-      dataSource={data?.data || []}
-      rowKey="id"
-      loading={loading}
-      scroll={{ x: 1600 }}
-      pagination={{
-        current: data?.page || 1,
-        pageSize: data?.pageSize || 20,
-        total: data?.total || 0,
-        showSizeChanger: true,
-        showTotal: (total) => `Всего: ${total}`,
-        pageSizeOptions: ['10', '20', '50', '100'],
-        onChange: (page, pageSize) => {
-          onFiltersChange({ ...filters, page, pageSize });
-        },
-      }}
-    />
+    <span>
+      <span style={{ fontStyle: 'normal', fontWeight: 600, marginRight: 8 }}>Подытог:</span>
+      {row.totalsByVegetable.map(([name, w], i) => (
+        <span key={name} className="vsm-subtotal-item">
+          {name} — <span className="vsm-subtotal-item-weight">{formatWeight(w)} кг</span>
+          {i < row.totalsByVegetable.length - 1 ? ' · ' : null}
+        </span>
+      ))}
+    </span>
   );
 }

@@ -16,7 +16,7 @@ export default function ShipmentsPage() {
   const { isAdmin } = useAuth();
   const [data, setData] = useState<PaginatedResponse<Shipment> | null>(null);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState<FiltersType>({ page: 1, pageSize: 20 });
+  const [filters, setFilters] = useState<FiltersType>({ page: 1, pageSize: 10000 });
   const [formOpen, setFormOpen] = useState(false);
   const [editShipment, setEditShipment] = useState<Shipment | null>(null);
 
