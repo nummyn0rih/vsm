@@ -1,5 +1,11 @@
 import api from './axiosInstance';
-import { Vegetable, Supplier, TransportCompany, Driver } from '../types';
+import { Vegetable, Supplier, TransportCompany, Driver, SupplierContract } from '../types';
+
+export interface ContractInput {
+  supplierId: number;
+  vegetableId: number;
+  volumeKg: number;
+}
 
 export const referencesApi = {
   // Овощи
@@ -38,4 +44,13 @@ export const referencesApi = {
     api.put<Driver>(`/references/drivers/${id}`, data),
   deleteDriver: (id: number) =>
     api.delete(`/references/drivers/${id}`),
+
+  // Контракты
+  getContracts: () => api.get<SupplierContract[]>('/references/contracts'),
+  createContract: (data: ContractInput) =>
+    api.post<SupplierContract>('/references/contracts', data),
+  updateContract: (id: number, data: ContractInput) =>
+    api.put<SupplierContract>(`/references/contracts/${id}`, data),
+  deleteContract: (id: number) =>
+    api.delete(`/references/contracts/${id}`),
 };

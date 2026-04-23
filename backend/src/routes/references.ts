@@ -5,6 +5,10 @@ import {
   getTransportCompanies, createTransportCompany, updateTransportCompany, deleteTransportCompany,
   getDrivers, createDriver, updateDriver, deleteDriver,
 } from '../controllers/referenceController';
+import {
+  getContracts, createContract, updateContract, deleteContract,
+  contractValidation,
+} from '../controllers/contractController';
 import { authMiddleware } from '../middleware/auth';
 import { requireAdmin } from '../middleware/roleCheck';
 
@@ -35,5 +39,11 @@ router.get('/drivers', getDrivers);
 router.post('/drivers', requireAdmin, createDriver);
 router.put('/drivers/:id', requireAdmin, updateDriver);
 router.delete('/drivers/:id', requireAdmin, deleteDriver);
+
+// Контракты
+router.get('/contracts', getContracts);
+router.post('/contracts', requireAdmin, contractValidation, createContract);
+router.put('/contracts/:id', requireAdmin, contractValidation, updateContract);
+router.delete('/contracts/:id', requireAdmin, deleteContract);
 
 export default router;

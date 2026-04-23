@@ -32,7 +32,7 @@ async function main() {
     create: { username: 'user', password: userPassword, fullName: 'Пользователь', role: Role.USER },
   });
 
-  const vegetables = ['Картофель', 'Морковь', 'Свёкла', 'Капуста', 'Лук', 'Томаты', 'Огурцы', 'Перец'];
+  const vegetables = ['Огурец', 'Черри', 'Халапеньо', 'Патиссон'];
   for (const name of vegetables) {
     await prisma.vegetable.upsert({ where: { name }, update: {}, create: { name } });
   }

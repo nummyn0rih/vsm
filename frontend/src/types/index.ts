@@ -83,6 +83,58 @@ export interface ShipmentFilters {
   pageSize?: number;
 }
 
+export interface AnalyticsDailyPoint {
+  date: string;
+  count: number;
+  totalWeight: number;
+}
+
+export interface AnalyticsDailyVegetablePoint {
+  date: string;
+  vegetable: string;
+  weight: number;
+  count: number;
+}
+
+export interface AnalyticsBreakdownItem {
+  id: number;
+  name: string;
+  count: number;
+  totalWeight: number;
+}
+
+export interface AnalyticsSummary {
+  daily: AnalyticsDailyPoint[];
+  dailyByVegetable: AnalyticsDailyVegetablePoint[];
+  bySupplier: AnalyticsBreakdownItem[];
+  byTransportCompany: AnalyticsBreakdownItem[];
+  byDriver: AnalyticsBreakdownItem[];
+}
+
+export interface AnalyticsSupplierVegetablePoint {
+  supplier: string;
+  vegetable: string;
+  actualKg: number;
+  contractKg: number;
+  count: number;
+}
+
+export interface SupplierContract {
+  id: number;
+  supplierId: number;
+  vegetableId: number;
+  volumeKg: number;
+  createdAt: string;
+  updatedAt: string;
+  supplier: { id: number; name: string };
+  vegetable: { id: number; name: string };
+}
+
+export interface AnalyticsTotal {
+  bySupplierVegetable: AnalyticsSupplierVegetablePoint[];
+  byTransportCompany: AnalyticsBreakdownItem[];
+}
+
 export interface AuditLog {
   id: number;
   action: string;

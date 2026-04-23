@@ -38,6 +38,7 @@ model Vegetable {
   createdAt DateTime @default(now()) @map("created_at")
 
   shipments Shipment[]
+  contracts SupplierContract[]
 
   @@map("vegetables")
 }
@@ -49,8 +50,24 @@ model Supplier {
   createdAt   DateTime @default(now()) @map("created_at")
 
   shipments Shipment[]
+  contracts SupplierContract[]
 
   @@map("suppliers")
+}
+
+model SupplierContract {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int      @map("supplier_id")
+  vegetableId Int      @map("vegetable_id")
+  volumeKg    Float    @map("volume_kg")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  supplier  Supplier  @relation(fields: [supplierId], references: [id])
+  vegetable Vegetable @relation(fields: [vegetableId], references: [id])
+
+  @@unique([supplierId, vegetableId])
+  @@map("supplier_contracts")
 }
 
 model TransportCompany {

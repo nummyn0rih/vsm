@@ -7,6 +7,7 @@ import authRoutes from './routes/auth';
 import shipmentRoutes from './routes/shipments';
 import referenceRoutes from './routes/references';
 import logRoutes from './routes/logs';
+import analyticsRoutes from './routes/analytics';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/references', referenceRoutes);
 app.use('/api/logs', logRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', (_, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });

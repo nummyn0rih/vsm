@@ -6,6 +6,7 @@ import {
   HistoryOutlined,
   LogoutOutlined,
   UserOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -23,6 +24,11 @@ export default function Layout() {
       key: '/',
       icon: <CarOutlined />,
       label: 'Поставки',
+    },
+    {
+      key: '/analytics',
+      icon: <BarChartOutlined />,
+      label: 'Аналитика',
     },
     ...(isAdmin
       ? [

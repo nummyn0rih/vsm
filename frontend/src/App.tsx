@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage';
 import ShipmentsPage from './pages/ShipmentsPage';
 import ReferencesPage from './pages/ReferencesPage';
 import LogsPage from './pages/LogsPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 dayjs.locale('ru');
 
@@ -39,6 +40,7 @@ export default function App() {
               }
             >
               <Route path="/" element={<ShipmentsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route
                 path="/references"
                 element={
